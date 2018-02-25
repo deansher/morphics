@@ -42,7 +42,8 @@ All keywords and symbols are namespaced.
 | mission | map spec where every value is a duty spec |
 | mission name | keyword identifier of the mission's map spec |
 | data resources | map map from keyword to any Clojure value |
-| resources | data resources merged with a map from role name to subteam |
+| resources | data resources merged with subteam resources |
+| subteam resources | a map from role name to subteam |
 | resource spec | map with `:morphics/dataResourceSpec`, `:morphics/roleDefinitions` |
 | data resource spec | map spec |
 | role definitions | a map from role name to mission name |
