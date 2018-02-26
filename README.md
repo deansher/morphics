@@ -20,11 +20,11 @@ each of these missions. A morphic component is constructed at runtime by assembl
 
 This is fundamentally different from how most software approaches abstraction and decomposition. We are used to a
 software component providing an API that specifies exactly what behavior its client can expect, while hiding
-implementation details that the client doesn't care about. But we are used to each software component implementing one,
-specific, fixed behavior. A morphic formation does implement a specific API: the mission. But it only provides
-an abstract, high-level implementation of the mission. It delegates more detailed implementation decisions to its
-subordinate roles. This allows programmers, end-users, or even machine learning algorithms to snap together alternative
-implementations that achieve a chosen mission in different ways.
+implementation details that the client doesn't care about. But in traditional software decomposition, each software
+component implements one specific, fixed behavior. In morphics, each component still implements a specific API: the
+mission. But it only provides an abstract, high-level implementation of the mission. It delegates more detailed
+implementation decisions to its subordinate roles. This allows programmers, end-users, or even machine learning
+algorithms to snap together alternative implementations that achieve a chosen mission in different ways.
 
 ## Conceptual Data Model
 
