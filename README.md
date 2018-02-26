@@ -56,7 +56,7 @@ A charter specifies how to instantiate a hierarchy of formations. It specifies t
 * data resources
 * name and charter for each subteam role
 
-## Clojure Representation of the Data Model
+## ClojureScript Representation of the Data Model
 
 All keywords and symbols are namespaced.
 
