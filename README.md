@@ -1,22 +1,63 @@
 # morphics
 
-Morphics is a different approach to constructing software. A morphic software component is constructed at runtime by
-assembling a hierarchy of subcomponents. The API for a morphic component is defined by a _mission_. For any given
-mission, the morphic runtime knows a set of alternative implementations called _formations_. Each formation defines
-a different high-level approach to carrying out the mission.
+Morphics is a different approach to constructing software. A morphic software component is a
+stateless hierarchy of pure functions and immutable data. The interface to a morphic component is
+defined by a top-level set of pure functions that pin down certain aspects of the component's
+behavior, but that may delegate important behavioral choices to deeper levels of the hierarchy.  The
+hierarchy of functions and data that comprise a morphic component is constructed at runtime. The
+constraints and alternatives that guide morphic component construction are exposed at runtime in
+both human-readable and machine-readable ways, so that morphic components can be assembled at
+runtime by programmers, non-programmers, and machine learning algorithms.
 
-As a real-world analogy that also provides motivation for the unusual terminology, consider American football.
-Each play has a mission. We can imagine these missions in simple terms like "safe short yardage gain", "risky
-long yardage gain", "field goal", etc. To achieve any given mission, a team could choose to line up in any of
+A morphic component's runtime structure follows many of the same patterns as newer object-oriented
+languages like Go and Swift that emphasize programming to interfaces and that deemphasize or
+disallow inheritance. The top-level functions of a morphic component are isomorphic to the methods
+of an interface in an object-oriented language. The runtime hierarchy of functions and data that
+comprise a morphic component is isomorphic to an object with its instance variables, which may
+themselves be objects or (in some languages) may be other data structures that contain objects. The
+difference between morphics and OO programming is largely a difference in style, ecosystem, and
+tooling, rather than a difference in runtime machinery. Even so, the resulting difference in
+capability is profound.
+
+The programmer's goal when implementing a morphic component is to implement a space of
+possible behaviors, rather than one specific behavior. The goal is for all of the behaviors in
+this space to be sane -- in the sense of not causing damaging runtime behavior like infinite
+loops, excessive resource utilization, or data structure corruption -- and for the overall space of
+behaviors to be dense in useful behaviors. This allows a future programmer, non-programmer,
+or machine learning algorithm to pin down a concrete behavior that is desired or that proves
+useful.
+
+## Morphic Terminology
+
+The isomorphs between morphics and object-oriented programming create a dilemma for implementing and
+describing the morphic framework. If we use familiar terms like "object", "interface", and "method",
+we may be easily pulled into old ways of thinking about software. But if we don't use familiar
+terms, we may feel as though we are making up new words for old ideas and claiming to have new
+ideas. The creator of morphics decided to accept that latter risk, creating new terminology for
+morphics that may help us think in new ways.
+
+A morphic software component is called a _team_. A team's API is defined by a _mission_. A team's
+top-level approach to carrying out its mission is defined by a _formation_. Sometimes only one
+formation is available to carry out a given mission, but often many different formations are
+available for the same mission.
+
+A formation can specify exactly how to carry out its mission. Often, however, a formation deliberately
+provides just a high-level strategy for carrying out its mission and leaves the details to be filled
+in later.
+
+As a real-world analogy that also provides motivation for the unusual terminology, consider American
+football. A football team finds itself in different situations that imply different missions. We can
+imagine these missions in simple terms like "gain a few yards safely", "gain at least 8 yards",
+"kick a field goal", etc. To achieve any given mission, a team could choose to line up in any of
 several formations.
 
-In our football analogy, the choice of formation doesn't pin down every detail of the play. Much is left open to the
-situation on the field and the preferences and reactions of the players. Similarly, the top-level formation of a morphic
-component only provides an outline of how that component will function. Many details are left to be filled in.
+In our football analogy, the choice of formation doesn't pin down every detail of the play. Much is
+left open to the situation on the field and the preferences and reactions of the players. Similarly,
+a morphic team's top-level formation often just provides a high-level strategy for achieving the mission.
 
-Because it is a software paradigm, morphics uses a regular recursive structure to fill in these details. Each morphic
-formation specifies a list of _roles_, where each role has its own mission. A formation must be chosen to implement
-each of these missions. A morphic component is constructed at runtime by assembling a hierarchy of formations.
+The more behavior of a morphic team is further specified by the team's _resources_, which are
+arbitrary data including subordinate teams (_subteams_).  By convention, a team's resources are
+immutable. Hence, by convention, teams stateless.
 
 This is fundamentally different from how most software approaches abstraction and decomposition. We are used to a
 software component providing an API that specifies exactly what behavior its client can expect, while hiding
@@ -24,7 +65,8 @@ implementation details that the client doesn't care about. But in traditional so
 component implements one specific, fixed behavior. In morphics, each component still implements a specific API: the
 mission. But it only provides an abstract, high-level implementation of the mission. It delegates more detailed
 implementation decisions to its subordinate roles. This allows programmers, end-users, or even machine learning
-algorithms to snap together alternative implementations that achieve a chosen mission in different ways.
+algorithms to snap together alternative implementations that achieve a chosen mission in different
+ways.
 
 ## Conceptual Data Model
 
@@ -55,6 +97,8 @@ A charter specifies how to instantiate a hierarchy of formations. It specifies t
 * formation name
 * data resources
 * name and charter for each subteam role
+
+## Relationship to OOP
 
 ## ClojureScript Representation of the Data Model
 
