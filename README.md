@@ -31,74 +31,60 @@ useful.
 
 The isomorphs between morphics and object-oriented programming create a dilemma for implementing and
 describing the morphic framework. If we use familiar terms like "object", "interface", and "method",
-we may be easily pulled into old ways of thinking about software. But if we don't use familiar
-terms, we may feel as though we are making up new words for old ideas and claiming to have new
-ideas. The creator of morphics decided to accept that latter risk, creating new terminology for
-morphics that may help us think in new ways.
+we may be easily pulled into old ways of thinking about software. But if we create new terminology
+for morphics, it may seem as though we are making up new words for old ideas and claiming to have
+new ideas. We choose to accept that latter risk, creating new terminology for morphics that may help
+us think in new ways.
 
 A morphic software component is called a _team_. A team's API is defined by a _mission_. A team's
-top-level approach to carrying out its mission is defined by a _formation_. Sometimes only one
-formation is available to carry out a given mission, but often many different formations are
-available for the same mission.
+top-level approach to carrying out its mission is defined by a _formation_. The relationship between
+missions and formations is one to many: any number of alternative formations may carry out the same
+mission.
 
-A formation can specify exactly how to carry out its mission. Often, however, a formation deliberately
-provides just a high-level strategy for carrying out its mission and leaves the details to be filled
-in later.
-
-As a real-world analogy that also provides motivation for the unusual terminology, consider American
-football. A football team finds itself in different situations that imply different missions. We can
-imagine these missions in simple terms like "gain a few yards safely", "gain at least 8 yards",
-"kick a field goal", etc. To achieve any given mission, a team could choose to line up in any of
-several formations.
+A formation can carry out its mission in a traditional, hardcoded way. Often, however, a formation
+deliberately provides just a high-level strategy for carrying out its mission and leaves the details
+to be filled in later. As a real-world analogy that also provides motivation for the unusual
+terminology, consider American football. A football team finds itself in different situations that
+imply different tactical missions. We can imagine these missions in simple terms like "gain a few
+yards safely", "gain at least 8 yards", "kick a field goal", etc. To achieve any given mission, a
+team could choose to line up in any of several formations.
 
 In our football analogy, the choice of formation doesn't pin down every detail of the play. Much is
 left open to the situation on the field and the preferences and reactions of the players. Similarly,
-a morphic team's top-level formation often just provides a high-level strategy for achieving the mission.
+a morphic team's top-level formation often leaves many details open to be defined by lower levels of
+the morphic hierarchy.
 
-The more behavior of a morphic team is further specified by the team's _resources_, which are
-arbitrary data including subordinate teams (_subteams_).  By convention, a team's resources are
-immutable. Hence, by convention, teams stateless.
-
-This is fundamentally different from how most software approaches abstraction and decomposition. We are used to a
-software component providing an API that specifies exactly what behavior its client can expect, while hiding
-implementation details that the client doesn't care about. But in traditional software decomposition, each software
-component implements one specific, fixed behavior. In morphics, each component still implements a specific API: the
-mission. But it only provides an abstract, high-level implementation of the mission. It delegates more detailed
-implementation decisions to its subordinate roles. This allows programmers, end-users, or even machine learning
-algorithms to snap together alternative implementations that achieve a chosen mission in different
-ways.
+The detailed behavior of a morphic team is defined by the team's _resources_, which are arbitrary
+data including subordinate teams (_subteams_).  By convention, a team's resources are
+immutable. Hence, by convention, teams are stateless.
 
 ## Conceptual Data Model
 
-The interface to a morphic component is defined by a _mission_. A mission specifies a set of _duties_, which are named
-functions. The API of each duty is specified by a _duty spec_. A mission is identified by a _mission name_.
+A mission (analogous to an OO interface) is identified by a _mission name_. The mission specifies a
+set of _duties_, which are named functions (analogous to OO methods). The API of each duty is
+specified by a _duty spec_ (analogous to a function type).
 
-A mission is implemented by a _team_, which is assembled at runtime from the detailed team description provided
-by a _charter_.
+A mission is implemented by a _team_ (analogous to an OO object with its instance variables). A team
+is assembled at runtime from the detailed team description provided by a _charter_ (analogous to
+a serialized object).
 
-The top-level runtime structure of a team is defined by a _formation_, which is identified by a _formation name_ and
-which implements a particular mission.
+The top-level runtime structure of a team is defined by a _formation_ (analogous to an OO class),
+which is identified by a _formation name_ and which implements a particular mission.  A formation
+has _resources_, which are named values (analogous to instance variables).
 
-A formation has _resources_, which are named values.  There are two kind of resources: _data resources_ and
-_subteams_. Data resources can be arbitrary values. The formation's data resource API is defined by a _data resource
-spec_. A formation's subteams are defined by a list of _role definitions_; each role definition specifies the role name
-and mission. The data resource spec and the role definitions together comprise the _resource spec_.
-
-A formation implements each of its duties with a _duty handler_, which is a function whose first parameter is the team's
-resources, and whose remaining parameters match the duty spec.
+A formation implements each of its duties with a _duty handler_ (analogous to an OO method
+implementation), which is a function whose first parameter is the team's resources and whose
+remaining parameters are those defined in the duy spec.
 
 To summarize, a formation specifies the following:
 * formation name
 * mission name
 * resource spec
-* list of duty handlers
+* mapping from duty name to duty handler
 
 A charter specifies how to instantiate a hierarchy of formations. It specifies the following:
 * formation name
-* data resources
-* name and charter for each subteam role
-
-## Relationship to OOP
+* resources, which commonly include subteams that are specified by subcharters
 
 ## ClojureScript Representation of the Data Model
 
@@ -108,16 +94,11 @@ All keywords and symbols are namespaced.
 | ------ | ------------ |
 | team | map from duty name to function |
 | duty name | keyword |
-| duty spec | function spec |
-| mission | map spec where every value is a duty spec |
+| duty spec | function spec that defines the external API, without the initial resources pameter of the duty handler |
+| mission | map spec that specifies a map from duty name from duty spec |
 | mission name | keyword identifier of the mission's map spec |
-| data resources | EDN map from keyword to arbitrary value |
-| resources | data resources merged with subteam resources |
-| subteam resources | a map from role name to subteam |
-| resource spec | map with `:morphics/dataResourceSpec`, `:morphics/roleDefinitions` |
-| data resource spec | map spec |
-| role definitions | a map from role name to mission name |
-| role name | keyword |
+| resources | map from keyword to ClojureScript value. Resource values may contain subteams but are otherwise EDN |
+| resource spec | map spec |
 | formation | map with `:morphics/formationName`, `:morphics/missionName`, `morphics/resourceSpec`, and `morphic/dutyHandlers`|
 | duty handlers | map from duty name to duty handler function |
 | formation name | symbol that evaluates to a formation |
@@ -133,11 +114,8 @@ Take the expected mission name as input.
 
 Verify that the charter's top-level formation implements the expected mission.
 
-Verify that the charter's top-level data resources conform to the formation's data resource spec.
-
-Verify that the charter specifies exactly the subteam roles in the formation's role definitions.
-
-Recursively validate each subteam charter.
+Verify that the charter's top-level resources conform to the formation's resource spec. This
+indirectly includes validating subordinate charters.
 
 ### Assembling a Team from a Charter
 
@@ -145,10 +123,8 @@ Take the expected mission name as input.
 
 Validate the charter against the expected mission.
 
-Recurse to assemble a subteam for each subteam role.
-
-Create the top-level formation's resources by starting with its data resources (from the top-level charter) and adding
-an entry for each subteam role.
+Construct the team's resources by cloning the charter's top-level resources, but recursing through
+the data structures replacing subteam charters with subteams.
 
 Generate each duty function (from the top-level mission) by partially applying the corresponding duty handler (from the
 top-level formation) to the resources. Combine these duty functions into the map that will represent the team.
@@ -158,7 +134,8 @@ top-level formation) to the resources. Combine these duty functions into the map
 Look up the known formations for the charter's top-level mission in the formation registry. Choose a random formation
 from that set.
 
-Generate the top-level formation's data resources by running spec gen on the top-level formation's data resource spec.
+Generate the top-level formation's data resources by running spec gen on the top-level formation's
+data resource spec. This indirectly generates random subteams.
 
 Recurse to generate a random charter for each subteam role.
 
@@ -168,14 +145,13 @@ Validate the charter.
 
 Parent charters can only be mated if they have the same top-level formation.
 
-For each data resource in the top-level formation's data resource spec:
-* If a _random interpolation_ is known for that resource's spec, then apply it to the parent's values for that resource.
-* Otherwise, randomly choose one of the two parent data resources.
+For each resource in the top-level formation's resource spec:
+ If a _mating interpolation_ is known for that resource's spec, then apply it to the two parents' values for that resource.
+* Otherwise, randomly choose one of the two parents' values for that resource
 
-For each subteam role:
-* If the parents' subteam charters for that role have the same top-level formation, then recurse to mate the two subteam
-charters.
-* Otherwise, randomly choose one of the two subteam charters.
+The mating interpolation for two subteam charters with the same top-level formation recursively
+applies this mating algorithm. If corresponding subteam charters have different top-level
+formations, one is chosen at random.
 
 
 
