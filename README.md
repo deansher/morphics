@@ -73,7 +73,7 @@ effects such as I/O or changes to global state.
 
 ## Conceptual Data Model
 
-A mission (analogous to an OO interface) is identified by a _mission name_. The mission specifies a
+A mission (analogous to an OO interface) is identified by a _mission id_.  The mission specifies a
 set of _duties_, which are named functions (analogous to OO methods). The API of each duty is
 specified by a _duty spec_ (analogous to a method's type). The term "duty" instead of "method" is
 intended to emphasize that a duty spec should be framed more in terms of goals than methods of
@@ -84,7 +84,7 @@ is assembled at runtime from the detailed team description provided by a _charte
 a serialized object).
 
 The top-level runtime structure of a team is defined by a _formation_ (analogous to an OO class),
-which is identified by a _formation name_ and which implements a particular mission.  A formation
+which is identified by a _formation id_ and which implements a particular mission.  A formation
 has _resources_, which are named values (analogous to instance variables).
 
 A formation implements each of its duties with a _duty handler_ (analogous to an OO method
@@ -92,13 +92,13 @@ implementation). A duty handler is a function whose first parameter is the team'
 whose remaining parameters are those defined in the duy spec.
 
 To summarize, a formation specifies the following:
-* formation name
-* mission name
+* formation id
+* mission id
 * resource spec
 * mapping from duty name to duty handler
 
 A charter specifies how to instantiate a hierarchy of formations. It specifies the following:
-* formation name
+* formation id
 * resources, which commonly include subteams that are specified by subcharters
 
 ## Clojure Representation of the Data Model
@@ -111,13 +111,13 @@ All keywords and symbols are namespaced.
 | duty name | keyword |
 | duty spec | function spec that defines the external API, without the initial resources pameter of the duty handler |
 | mission | map spec that specifies a map from duty name from duty spec |
-| mission name | keyword identifier of the mission's map spec |
+| mission id | map with `:morphics.core/mission-spec-name` |
 | resources | map from keyword to Clojure value. Resource values may contain subteams but are otherwise EDN |
 | resource spec | map spec |
-| formation | map with `:morphics/formationName`, `:morphics/missionName`, `morphics/resourceSpec`, and `morphic/dutyHandlers`|
+| formation | map with `:morphics.core/formation-id`, `:morphics.core/mission-id`, `morphics.core/resource-spec`,  `morphics.core/duty-handlers`|
+| formation id | map with `:morphics.core/formation-symbol` |
 | duty handlers | map from duty name to duty handler function |
-| formation name | symbol that evaluates to a formation |
-| charter | EDN map with `:morphics/formationName`, `:morphics/dataResources`, `:morphics/roleCharters` |
+| charter | EDN map with `:morphics.core/formation-id`, `:morphics.core/data-resources`, `:morphics.core/role-charters` |
 
 A _formation registry_ provides a set of known formations for each mission.
 
