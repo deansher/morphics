@@ -101,7 +101,7 @@ A charter specifies how to instantiate a hierarchy of formations. It specifies t
 * formation name
 * resources, which commonly include subteams that are specified by subcharters
 
-## ClojureScript Representation of the Data Model
+## Clojure Representation of the Data Model
 
 All keywords and symbols are namespaced.
 
@@ -112,7 +112,7 @@ All keywords and symbols are namespaced.
 | duty spec | function spec that defines the external API, without the initial resources pameter of the duty handler |
 | mission | map spec that specifies a map from duty name from duty spec |
 | mission name | keyword identifier of the mission's map spec |
-| resources | map from keyword to ClojureScript value. Resource values may contain subteams but are otherwise EDN |
+| resources | map from keyword to Clojure value. Resource values may contain subteams but are otherwise EDN |
 | resource spec | map spec |
 | formation | map with `:morphics/formationName`, `:morphics/missionName`, `morphics/resourceSpec`, and `morphic/dutyHandlers`|
 | duty handlers | map from duty name to duty handler function |
