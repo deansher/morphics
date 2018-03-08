@@ -111,13 +111,13 @@ All keywords and symbols are namespaced.
 | duty name | keyword |
 | duty spec | function spec that defines the external API, without the initial resources pameter of the duty handler |
 | mission | map spec that specifies a map from duty name from duty spec |
-| mission id | map with `:morphics.core/mission-spec-name` |
+| mission id | { `:morphics.core/mission-spec-name` } |
 | resources | map from keyword to Clojure value. Resource values may contain subteams but are otherwise EDN |
 | resource spec | map spec |
-| formation | map with `:morphics.core/formation-id`, `:morphics.core/mission-id`, `morphics.core/resource-spec`,  `morphics.core/duty-handlers`|
+| formation | { `:morphics.core/formation-id`, `:morphics.core/mission-id`, `morphics.core/resource-spec`,  `morphics.core/duty-handlers` } |
 | formation id | map with `:morphics.core/formation-symbol` |
 | duty handlers | map from duty name to duty handler function |
-| charter | EDN map with `:morphics.core/formation-id`, `:morphics.core/data-resources`, `:morphics.core/role-charters` |
+| charter | EDN { `:morphics.core/formation-id`, `:morphics.core/data-resources`, `:morphics.core/role-charters` } |
 
 A _formation registry_ provides a set of known formations for each mission.
 
@@ -161,7 +161,7 @@ Validate the charter.
 Parent charters can only be mated if they have the same top-level formation.
 
 For each resource in the top-level formation's resource spec:
- If a _mating interpolation_ is known for that resource's spec, then apply it to the two parents' values for that resource.
+* If a _mating interpolation_ is known for that resource's spec, then apply it to the two parents' values for that resource.
 * Otherwise, randomly choose one of the two parents' values for that resource
 
 The mating interpolation for two subteam charters with the same top-level formation recursively
