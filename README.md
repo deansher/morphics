@@ -1,10 +1,10 @@
 # morphics
 
-Morphics is a different approach to constructing software. A morphic software component is a
-stateless hierarchy of pure functions and immutable data. The interface to a morphic component is
-defined by a top-level set of pure functions. The implementations of these functions pin down
-certain aspects of the component's behavior, but they commonly delegate important behavioral
-decisions to deeper levels of the hierarchy.
+Morphics is a different approach to constructing software that makes it more malleable and more
+evolvable. A morphic software component is a stateless hierarchy of pure functions and immutable
+data. The interface to a morphic component is defined by a top-level set of pure functions. The
+implementations of these functions pin down certain aspects of the component's behavior, but they
+commonly delegate important behavioral decisions to deeper levels of the hierarchy.
 
 The difference between this approach and a conventional component hierarchy is conceptually subtle
 but makes a large practical difference. A conventional software component implements one specific
@@ -110,7 +110,7 @@ All keywords and symbols are namespaced.
 | team | map from duty name to function |
 | duty name | keyword |
 | duty spec | function spec that defines the external API, without the initial resources pameter of the duty handler |
-| mission | map spec that specifies a map from duty name from duty spec |
+| mission | map spec where each key is a duty |
 | mission id | { `:morphics.core/mission-spec-name` } |
 | resources | map from keyword to Clojure value. Resource values may contain subteams but are otherwise EDN |
 | resource spec | map spec |
