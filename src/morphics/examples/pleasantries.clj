@@ -1,101 +1,162 @@
 (ns morphics.examples.pleasantries
   "A toy morphics application that mimics getting-to-know-you pleasantries"
-  (:require 
-   [clojure.core]
-   [clojure.spec.alpha :as s]
-   [morphics.core :refer [oo]]))
+  (:require
+    [clojure.core]
+    [clojure.spec.alpha :as s]
+    [morphics.core :as m :refer [o>]]
+    [clojure.set :as set]))
+
+(def party-names
+  #{:fred :sue :john :sally})
+
+(def party-vocabulary
+  (set/union party-names #{:hello :i :love :me :hi :huh :ok}))
+
+(s/def ::team (s/map-of keyword? fn?))
 
 (s/def ::done boolean?)
 
-(s/def ::happiness double?)
+;; Expectations typically in [-1.0, 1.0]
+(s/def ::expectation-greeting double?)
+(s/def ::expectation-tell-me-your-name double?)
+
+;; Emotions typically in [-1.0, 1.0]
+(s/def ::emotion-happiness double?)
+(s/def ::emotion-belonging double?)
+(s/def ::emotion-irritation double?)
+(s/def ::emotion-boredom double?)
 
 (s/def ::party-state (s/keys :req [::done
-                                   ::happiness]))
-  
-(s/def ::initial-state (s/fspec :args empty?
-                                :ret ::party-state))
+                                   ::expectation-greeting
+                                   ::expectation-tell-me-your-name
+                                   ::emotion-happiness
+                                   ::emotion-belonging
+                                   ::emotion-irritation
+                                   ::emotion-boredom]))
+(def default-initial-party-state
+  {
+   ::done                          false
+   ::expectation-greeting          1.0
+   ::expectation-tell-me-your-name -1.0
+   ::emotion-happiness             0.0
+   ::emotion-belonging             0.0
+   ::emotion-irritation            0.0
+   ::emotion-boredom               0.0
+   })
 
-(s/def ::line (s/* keyword?))
+(s/def ::variable-initial-party-state-fields (s/keys :req [::emotion-happiness
+                                                           ::emotion-belonging
+                                                           ::emotion-irritation
+                                                           ::emotion-boredom]))
 
-(s/def ::opening-line (s/fspec :args (s/cat :state ::party-state)
-                               :ret (s/cat :line ::line
-                                           :new-state ::party-state)))
+(s/def ::line (s/every party-vocabulary :kind vector?))
 
-(s/def ::reply (s/fspec :args (s/cat :state ::party-state 
-                                     :line ::line)
+(s/def ::get-initial-state (s/fspec :args empty?
+                                    :ret ::party-state))
+
+(s/def ::hear (s/fspec :args (s/cat :state ::party-state
+                                    :line ::line)
+                       :ret ::party-state))
+
+(s/def ::speak (s/fspec :args (s/cat :state ::party-state)
                         :ret (s/cat :line ::line
-                                    :new-state ::party-state)))
+                                    :state ::party-state)))
 
-(s/def ::party (s/keys :req [::initial-state 
-                             ::opening-line 
-                             ::reply]))
+(s/def ::party (s/and ::team
+                      (s/keys :req [::get-initial-state
+                                    ::hear
+                                    ::speak])))
 
-(defn- score-chat*
-  [[party1 state1]
-   [party2 state2]
-   max-interactions   
-   is-first-round
-   previous-party2-line]
+(s/def ::party-and-state (s/keys :req [::party ::party-state]))
+
+(defn- flip-if
+  "if b, then return the pair in reverse order"
+  [b [x y]]
+  (if b [y x] [x y]))
+
+(defn score-chat*
+  "Conduct a chat between the two parties, giving speaking-party the first chance to speak,
+   and continuing for up to max-interactions (where an interaction is one line spoken and heard)
+   or until either party's state has ::done of true.
+
+   Return a vector of two doubles indicating the resulting happiness of the two parties."
+  [{speaking-party ::party, speaking-party-state ::party-state}
+   {listening-party ::party, listening-party-state ::party-state}
+   speaker-is-party1
+   max-interactions]
   (if (or (<= max-interactions 0)
-          (::done state1)
-          (::done state2))
-    [(::happiness state1) 
-     (::happiness state2)]
-    (let [[party1-line state1] (if is-first-round
-                                 (oo party1 ::opening-line state1)
-                                 (oo party1 ::reply state1 previous-party2-line))
-          [party2-line state2] (oo party2 ::reply state2 party1-line)]
-      (recur [party1 state1]
-             [party2 state2]
-             (- max-interactions 1)
-             false
-             party2-line))))
+          (::done speaking-party-state)
+          (::done listening-party-state))
+    (flip-if (not speaker-is-party1)
+             [(::emotion-happiness speaking-party-state)
+              (::emotion-happiness listening-party-state)])
+    (let [[line speaking-party-state] (o> speaking-party ::speak speaking-party-state)
+          listening-party-state (o> listening-party ::hear listening-party-state line)]
+      (recur {::party listening-party ::party-state listening-party-state}
+             {::party speaking-party ::party-state speaking-party-state}
+             (not speaker-is-party1)
+             (dec max-interactions)))))
 
 (s/fdef score-chat*
-        :args (s/cat :party1-info (s/cat :party1 ::party, :state1 ::party-state)
-                     :party2-info (s/cat :party2 ::party, :state2 ::party-state)
-                     :max-interactions integer?
-                     :is-first-round boolean?
-                     :previous-party2-line ::line)
-        :ret (s/cat :party1-happiness double?
-                    :party2-happiness double?))
-
-(defn- score-chat
-  "Give the two parties a chance to chat.
-   Return a vector of two doubles indicating the resulting happiness of the two parties."
-  [party1 party2 max-interactions]
-  (score-chat* [party1 (oo party1 ::initial-state)]
-               [party2 (oo party2 ::initial-state)]
-               max-interactions
-               true
-               nil))
-
-(s/fdef score-chat
-        :args (s/cat :party1 ::party 
-                     :party2 ::party 
+        :args (s/cat :speaker ::party-and-state
+                     :listener ::party-and-state
+                     :speaker-is-party1 boolean?
                      :max-interactions integer?)
         :ret (s/cat :party1-happiness double?
                     :party2-happiness double?))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; example instances
+(defn score-chat [party1 party2 max-interactions]
+  (score-chat* {::party party1 ::party-state (o> party1 ::get-initial-state)}
+               {::party party2 ::party-state (o> party2 ::get-initial-state)}
+               true
+               max-interactions))
 
-(def sue {::initial-state (fn [] {::done false, ::happiness 1.0})
-          ::opening-line (fn [state] [[:hello] state])
-          ::reply (fn [state line] [[:i :dont :know] state])})
+(s/fdef score-chat
+        :args (s/cat :party1 ::party
+                     :party2 ::party
+                     :max-interactions integer?)
+        :ret (s/cat :party1-happiness double?
+                    :party2-happiness double?))
 
-(defn fred-sadder-reply [line state sadness]
-  (let [new-state (update state ::happiness #(- % sadness))]
-    (if (>= 0.0 (::happiness new-state))
-      [line new-state]
-      [[:go :away] (assoc new-state :done true)])))
+(s/def ::listener (s/and ::team
+                         (s/keys :req [::hear])))
 
-(def fred {::initial-state (fn [] {::done false, ::happiness 0.0, ::is-first-line true })
-           ::opening-line (fn [state] [[:hey] state])
-           ::reply (fn [state line] 
-                     (let [new-state (assoc state ::is-first-line false)]
-                       (if (= line [:hello])
-                         (if (::is-first-line state)
-                           [[:hello :to :you] (update new-state ::happiness #(+ % 1.0))]
-                           (fred-sadder-reply nil new-state 0.2))
-                         (fred-sadder-reply (concat [:why] line) new-state 0.1))))})
+(s/def ::listeners (s/* ::listener))
+
+(s/def ::speaking-impulse (s/fspec :args (s/cat :state ::party-state)
+                                   :ret (s/cat :impulse (s/double-in :min 0.0 :NaN? false)
+                                               :line (s/nilable ::line))))
+
+(s/def ::speaker (s/and ::team
+                        (s/keys :req [::speaking-impulse])))
+
+(s/def ::speakers (s/* ::speaker))
+
+(s/def ::party-formation-1-resources
+  (s/keys :req [::variable-initial-party-state-fields
+                ::listeners
+                ::speakers]))
+
+(m/def-formation
+  [::party-formation-1 ::party ::party-formation-1-resources]
+  ::get-initial-state
+  (fn [res] (merge default-initial-party-state
+                   (::variable-initial-party-state-fields res)))
+  ::hear
+  (fn [res state line] (let [tell-listener
+                             (fn [state listener] (o> listener ::hear state line))]
+                         (reduce tell-listener state (::listeners res))))
+  ::speak
+  (fn [res state] (let [consider-speaker
+                        (fn [[impulse line] speaker]
+                          (let [[new-impulse new-line] (o> speaker ::speaking-impulse state)]
+                            (if (> new-impulse impulse)
+                              [new-impulse new-line]
+                              [impulse line])))]
+                    (let [[_ line]
+                          (reduce consider-speaker [-1.0 nil] (::speakers res))]
+                      line)))
+  )
+
+
+

@@ -103,19 +103,19 @@ A charter specifies how to instantiate a hierarchy of formations. It specifies t
 
 ## Clojure Representation of the Data Model
 
-All keywords and symbols are namespaced.
+All keywords and symbols are name-spaced.
 
 | Concept | Representation |
 | ------ | ------------ |
 | team | map from duty name to function |
-| duty name | keyword |
-| duty spec | function spec that defines the external API, without the initial resources pameter of the duty handler |
-| mission | map spec where each key is a duty |
-| mission id | { `:morphics.core/mission-spec-name` } |
+| duty name | name-spaced keyword corresponding to a duty spec |
+| duty spec | function spec that defines the external API, without the initial resources parameter of the duty handler |
+| mission | spec for a team |
+| mission id | { `:morphics.core/team-spec-keyword` } |
 | resources | map from keyword to Clojure value. Resource values may contain subteams but are otherwise EDN |
 | resource spec | map spec |
-| formation | { `:morphics.core/formation-id`, `:morphics.core/mission-id`, `morphics.core/resource-spec`,  `morphics.core/duty-handlers` } |
-| formation id | map with `:morphics.core/formation-symbol` |
+| formation | { `:morphics.core/formation-id`, `:morphics.core/mission-id`, `morphics.core/resource-spec-keyword`,  `morphics.core/duty-handlers` } |
+| formation id | { `:morphics.core/formation-symbol` } |
 | duty handlers | map from duty name to duty handler function |
 | charter | EDN { `:morphics.core/formation-id`, `:morphics.core/data-resources`, `:morphics.core/role-charters` } |
 

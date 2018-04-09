@@ -1,7 +1,8 @@
 (ns morphics.core-test
   (:require [clojure.test :refer :all]
-            [morphics.core :refer :all]))
+            [morphics.core :refer :all]
+            [clojure.spec.alpha :as s]
+            [clojure.spec.test.alpha :as st]
+            [orchestra.spec.test :as orch]))
 
-(deftest a-test
-  (testing "FIXME, I fail."
-    (is (= 0 1))))
+(orch/instrument)
