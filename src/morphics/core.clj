@@ -2,6 +2,8 @@
   (:require [clojure.spec.alpha :as s]
             [clojure.test :refer [with-test is]]))
 
+(s/def ::team (s/map-of keyword? fn?))
+
 (s/def ::team-spec-keyword keyword?)
 
 (s/def ::mission-id (s/keys :req [::team-spec-keyword]))
@@ -58,10 +60,12 @@
       nil)))
 
 (s/fdef def-formation
-        :args (s/cat :team-and-resource (s/and vector?
-                                               (s/cat :formation-keyword keyword?
-                                                      :team-spec-keyword keyword?
-                                                      :resource-spec-keyword (s/? keyword?)))
+        :args (s/cat :keywords (s/and vector?
+                                      (s/cat :formation-keyword keyword?
+                                             :team-spec-keyword keyword?
+                                             :resource-spec-keyword (s/? keyword?)))
                      :duty-handlers (s/* (s/cat :duty-name keyword?
                                                 :duty-handler fn?)))
-        :ret nil?)
+        :ret nil?
+        :fn #(s/valid? ::formation
+                       (-> % :args :keywords :formation-keyword get-formation)))

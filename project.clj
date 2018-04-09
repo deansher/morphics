@@ -6,4 +6,6 @@
   :dependencies [[org.clojure/clojure "1.9.0"]]
   :profiles {:dev {:dependencies [[org.clojure/clojure "1.9.0"]
                                   [org.clojure/test.check "0.10.0-alpha2"]
-                                  [orchestra "2017.11.12-1"]]}})
+                                  [orchestra "2017.11.12-1"]
+                                  ; [spectrum "0.1.5-SNAPSHOT"] one day this ship will come in
+                                  ]}})

@@ -12,8 +12,6 @@
 (def party-vocabulary
   (set/union party-names #{:hello :i :love :me :hi :huh :ok}))
 
-(s/def ::team (s/map-of keyword? fn?))
-
 (s/def ::done boolean?)
 
 ;; Expectations typically in [-1.0, 1.0]
@@ -62,7 +60,7 @@
                         :ret (s/cat :line ::line
                                     :state ::party-state)))
 
-(s/def ::party (s/and ::team
+(s/def ::party (s/and ::m/team
                       (s/keys :req [::get-initial-state
                                     ::hear
                                     ::speak])))

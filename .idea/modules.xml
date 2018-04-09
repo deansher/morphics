@@ -3,6 +3,7 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/morphics.iml" filepath="$PROJECT_DIR$/morphics.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../spectrum/spectrum.iml" filepath="$PROJECT_DIR$/../spectrum/spectrum.iml" />
     </modules>
   </component>
 </project>
