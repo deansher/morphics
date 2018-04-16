@@ -122,11 +122,11 @@
 (s/def ::listeners (s/* ::listener))
 
 (s/def ::speaking-impulse (s/fspec :args (s/cat :state ::party-state)
-                                   :ret (s/cat :impulse (s/double-in :min 0.0 :NaN? false)
-                                               :line (s/nilable ::line))))
+                                   :ret (s/double-in :min 0.0 :NaN? false)))
 
 (s/def ::speaker (s/and ::team
-                        (s/keys :req [::speaking-impulse])))
+                        (s/keys :req [::speaking-impulse
+                                      ::speak])))
 
 (s/def ::speakers (s/* ::speaker))
 
@@ -134,6 +134,19 @@
   (s/keys :req [::variable-initial-party-state-fields
                 ::listeners
                 ::speakers]))
+
+(defn- speaker-reduction-step [state]
+  (fn [[highest-impulse highest-impulse-speaker] speaker]
+    (let [new-impulse (o> speaker ::speaking-impulse state)]
+      (if (> new-impulse highest-impulse)
+        [new-impulse speaker]
+        [highest-impulse highest-impulse-speaker]))))
+
+(s/fdef speaker-reduction-step
+        :args (s/cat :state ::party-state)
+        :ret (s/fspec :args (s/cat :reduction-state (s/tuple double? ::speaker)
+                                   :speaker ::speaker)
+                      :ret (s/tuple double? ::speaker)))
 
 (m/def-formation
   [::party-formation-1 ::party ::party-formation-1-resources]
@@ -145,15 +158,12 @@
                              (fn [state listener] (o> listener ::hear state line))]
                          (reduce tell-listener state (::listeners res))))
   ::speak
-  (fn [res state] (let [consider-speaker
-                        (fn [[impulse line] speaker]
-                          (let [[new-impulse new-line] (o> speaker ::speaking-impulse state)]
-                            (if (> new-impulse impulse)
-                              [new-impulse new-line]
-                              [impulse line])))]
-                    (let [[_ line]
-                          (reduce consider-speaker [-1.0 nil] (::speakers res))]
-                      line)))
+  (fn [res state] (let [[_ speaker]
+                        (reduce (speaker-reduction-step state)
+                                [Double/NEGATIVE_INFINITY nil]
+                                (::speakers res))]
+                    (when speaker
+                      (o> speaker ::speak state))))
   )
 
 

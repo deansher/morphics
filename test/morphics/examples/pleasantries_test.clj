@@ -1,5 +1,5 @@
 (ns morphics.examples.pleasantries-test
-  (:require [clojure.test :refer [deftest is]]
+  (:require [clojure.test :refer :all]
             [morphics.core :as m :refer (o>)]
             [morphics.examples.pleasantries :as pl]
             [clojure.spec.alpha :as s]
@@ -46,24 +46,24 @@
                                        [:hello])
                                      (assoc state ::anyone-already-spoke true)])})
 
-(defn- approx= [x y]
+(defn- approx= [^Double x ^Double y]
   (< (Math/abs ^Double (- x y)) 1e-4))
 
 ;; If Fred goes first, we expect the following chat:
-;; Fred says [:hello]. Sue bumps her happiness to 1.0 and drops her expectation greeting to 0.0.
-;; Sue says [:hello]. Fred bumps his happiness to 1.0 and drops his expectation greeting to 0.0.
-;; Fred says [:huh]. Sue drops her happiness to 0.8 and her expectation greeting to -1.0.
-;; Sue says [:hello]. Fred leaves his happiness at 1.0 and drops his expectation greeting to -1.0.
+;; Fred says [:hello]. Sue bumps her happiness to 1.0 and drops her expectation-greeting to 0.0.
+;; Sue says [:hello]. Fred bumps his happiness to 1.0 and drops his expectation-greeting to 0.0.
+;; Fred says [:huh]. Sue drops her happiness to 0.8 and her expectation-greeting to -1.0.
+;; Sue says [:hello]. Fred leaves his happiness at 1.0 and drops his expectation-greeting to -1.0.
 ;; Fred says [:huh]. Sue drops her happiness to 0.6.
 ;; Sue says [:hello]. Fred drops his happiness to 0.0.
 ;; Fred says [:huh]. Sue drops her happiness to 0.4.
 ;; Sue says [:hello]. Fred drops his happiness to -1.0 and we are done.
 (deftest fred-sue-chat
   (let [result (pl/score-chat fred sue 20)]
-    (let [[fred-hap sue-hap] result
+    (let [[fred-happiness sue-happiness] result
           msg (str "result was " result)]
-      (is (approx= fred-hap -1.0) msg)
-      (is (approx= sue-hap 0.4) msg))))
+      (is (approx= fred-happiness -1.0) msg)
+      (is (approx= sue-happiness 0.4) msg))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Exercise morphics more thoroughly against the pleasantries framework.
