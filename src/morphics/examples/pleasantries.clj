@@ -57,8 +57,8 @@
                        :ret ::party-state))
 
 (s/def ::speak (s/fspec :args (s/cat :state ::party-state)
-                        :ret (s/cat :line ::line
-                                    :state ::party-state)))
+                        :ret (s/nilable (s/cat :line ::line
+                                               :state ::party-state))))
 
 (s/def ::party (s/and ::m/team
                       (s/keys :req [::get-initial-state

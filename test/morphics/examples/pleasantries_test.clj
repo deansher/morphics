@@ -1,5 +1,6 @@
 (ns morphics.examples.pleasantries-test
   (:require [clojure.test :refer :all]
+            [com.rpl.specter :refer :all]
             [morphics.core :as m :refer (o>)]
             [morphics.examples.pleasantries :as pl]
             [clojure.spec.alpha :as s]
@@ -16,11 +17,13 @@
 ;; In any case, they subtract 1.0 from their greeting expectation. So it goes 1.0, 0.0, -1.0.
 (defn- sue-fred-hear [state line]
   (let [update-state (fn [state happiness-delta]
-                       (let [new-expectation-greeting (max -1.0 (- (::pl/expectation-greeting state) 1.0))
-                             new-happiness            (+ (::pl/emotion-happiness state) happiness-delta)]
-                         (assoc state ::pl/expectation-greeting new-expectation-greeting
-                                      ::pl/emotion-happiness new-happiness
-                                      ::pl/done (< new-happiness 0.0))))]
+                       (let [new-happiness (-> state ::pl/emotion-happiness (+ happiness-delta))
+                             state         (transform ::pl/expectation-greeting
+                                                      (fn [eg] (-> eg dec (max -1.0)))
+                                                      state)]
+                         (assoc state
+                           ::pl/emotion-happiness new-happiness
+                           ::pl/done (neg? new-happiness))))]
     (if (= line [:hello])
       (update-state state (::pl/expectation-greeting state))
       (update-state state -0.2))))

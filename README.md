@@ -112,12 +112,12 @@ All keywords and symbols are name-spaced.
 | duty spec | function spec that defines the external API, without the initial resources parameter of the duty handler |
 | mission | spec for a team |
 | mission id | { `:morphics.core/team-spec-keyword` } |
-| resources | map from keyword to Clojure value. Resource values may contain subteams but are otherwise EDN |
+| resources | map from keyword to Clojure value. Resource values are EDN and may notably be sub-team charters |
 | resource spec | map spec |
 | formation | { `:morphics.core/formation-id`, `:morphics.core/mission-id`, `morphics.core/resource-spec-keyword`,  `morphics.core/duty-handlers` } |
 | formation id | { `:morphics.core/formation-symbol` } |
 | duty handlers | map from duty name to duty handler function |
-| charter | EDN { `:morphics.core/formation-id`, `:morphics.core/data-resources`, `:morphics.core/role-charters` } |
+| charter | EDN { `:morphics.core/formation-id`, `:morphics.core/raw-resources` } |
 
 A _formation registry_ provides a set of known formations for each mission.
 
