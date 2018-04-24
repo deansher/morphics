@@ -16,26 +16,21 @@
 
 (s/def ::resources-id (s/keys :req [::resources-spec-keyword]))
 
-(s/def ::formation-keys (s/keys :req [::formation-id
-                                      ::mission-id
-                                      ::duty-handlers]
-                                :opt [::resources-id]))
+(s/def ::formation (s/keys :req [::formation-id
+                                 ::mission-id
+                                 ::duty-handlers]
+                           :opt [::resources-id]))
 
-(defn valid-formation? [formation] "do some validation")
+(defonce ^:private keyword->formation-ref (atom {}))
 
-(s/def ::formation (s/and ::formation-keys
-                          valid-formation?))
-
-(defonce ^:private keyword-to-formation-ref (atom {}))
-
-(defn get-formation [keyword] (keyword @keyword-to-formation-ref))
+(defn get-formation [keyword] (keyword @keyword->formation-ref))
 
 (s/fdef get-formation
         :args (s/cat :keyword keyword?)
         :ret ::formation)
 
 (defn o>
-  "Look up key in map to retrieve a function that is applied to rest"
+  "Look up key in map to retrieve a function; apply that function to rest"
   [map key & rest]
   (apply (get map key) rest))
 
@@ -56,7 +51,7 @@
               (when resources-spec-keyword
                 [::resources-id {::resources-spec-keyword resources-spec-keyword}]))]
     (do
-      (swap! keyword-to-formation-ref assoc formation-keyword formation)
+      (swap! keyword->formation-ref assoc formation-keyword formation)
       nil)))
 
 (s/fdef def-formation

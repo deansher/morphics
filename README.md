@@ -115,7 +115,7 @@ All keywords and symbols are name-spaced.
 | resources | map from keyword to Clojure value. Resource values are EDN and may notably be sub-team charters |
 | resource spec | map spec |
 | formation | { `:morphics.core/formation-id`, `:morphics.core/mission-id`, `morphics.core/resource-spec-keyword`,  `morphics.core/duty-handlers` } |
-| formation id | { `:morphics.core/formation-symbol` } |
+| formation id | { `:morphics.core/formation-keyword` } |
 | duty handlers | map from duty name to duty handler function |
 | charter | EDN { `:morphics.core/formation-id`, `:morphics.core/raw-resources` } |
 
