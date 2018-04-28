@@ -107,67 +107,25 @@ All keywords and symbols are name-spaced.
 
 | Concept | Representation |
 | ------ | ------------ |
-| mission | protocol |
-| mission id | `MissionId [mission-protocol-symbol]` |
-| team | a value that implements a mission protocol |
-| resources | the arguments passed to a team's constructor |
-| resources spec | `spec-tools.spec/Spec` for the resources *charter* -- prior to transformation into resources |
-| formation | `Formation [formation-id mission-id team-constructor-symbol resources-spec-symbol]` |
-| formation id | `FormationId [formation-keyword]` |
-| charter | EDN `#morphics.core/Charter [formation-id resources-charter]` |
-| resources charter | EDN that will be transformed into the team's resources, using the "conforming" support from spec-tools |
-
-A _formation registry_ provides a map from formation keyword to formation, plus a set of known formations for each mission.
-
-The transformation from resources charter to resources is responsible for instantiating sub-teams. The resources 
-charter contains a `morphics.core/Charter` everywhere a sub-team should be instantiated in the resources. 
+| mission | `spec-tools.spec/Spec` |
+| mission id | mostly fades away, but corresponds in some cases to a spec keyword or a multi-method hierarchy key |
+| team | value that conforms to a mission spec |
+| resources | implicitly embedded in the team |
+| resources spec | implicitly embedded in the mission spec |
+| formation | `spec-tools.spec/Spec` for an arbitrary Clojure value |
+| formation id | mostly fades away, but corresponds in some cases to a multi-method hierarchy key |
+| charter | a Clojure value that conforms to a mission spec; represented externally as EDN |
 
 ## Important Morphic Operations
 
 ### Validating a Charter
 
-Take the expected mission name as input.
-
-Verify that the charter's top-level formation implements the expected mission.
-
-Verify that the charter's top-level resources conform to the formation's resource spec. This
-indirectly includes validating subordinate charters.
-
 ### Assembling a Team from a Charter
-
-Take the expected mission name as input.
-
-Validate the charter against the expected mission.
-
-Construct the team's resources by cloning the charter's top-level resources, but recursing through
-the data structures replacing subteam charters with subteams.
-
-Generate each duty function (from the top-level mission) by partially applying the corresponding duty handler (from the
-top-level formation) to the resources. Combine these duty functions into the map that will represent the team.
 
 ### Creating a Random Charter for a Mission
 
-Look up the known formations for the charter's top-level mission in the formation registry. Choose a random formation
-from that set.
-
-Generate the top-level formation's data resources by running spec gen on the top-level formation's
-data resource spec. This indirectly generates random subteams.
-
-Recurse to generate a random charter for each subteam role.
-
-Validate the charter.
-
 ### Mating Two Parent Charters
 
-Parent charters can only be mated if they have the same top-level formation.
-
-For each resource in the top-level formation's resource spec:
-* If a _mating interpolation_ is known for that resource's spec, then apply it to the two parents' values for that resource.
-* Otherwise, randomly choose one of the two parents' values for that resource
-
-The mating interpolation for two subteam charters with the same top-level formation recursively
-applies this mating algorithm. If corresponding subteam charters have different top-level
-formations, one is chosen at random.
 
 
 
