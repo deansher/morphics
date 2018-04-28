@@ -107,19 +107,20 @@ All keywords and symbols are name-spaced.
 
 | Concept | Representation |
 | ------ | ------------ |
-| team | map from duty name to function |
-| duty name | name-spaced keyword corresponding to a duty spec |
-| duty spec | function spec that defines the external API, without the initial resources parameter of the duty handler |
-| mission | spec for a team |
-| mission id | { `:morphics.core/team-spec-keyword` } |
-| resources | map from keyword to Clojure value. Resource values are EDN and may notably be sub-team charters |
-| resource spec | map spec |
-| formation | { `:morphics.core/formation-id`, `:morphics.core/mission-id`, `morphics.core/resource-spec-keyword`,  `morphics.core/duty-handlers` } |
-| formation id | { `:morphics.core/formation-keyword` } |
-| duty handlers | map from duty name to duty handler function |
-| charter | EDN { `:morphics.core/formation-id`, `:morphics.core/raw-resources` } |
+| mission | protocol |
+| mission id | `MissionId [mission-protocol-symbol]` |
+| team | a value that implements a mission protocol |
+| resources | the arguments passed to a team's constructor |
+| resources spec | `spec-tools.spec/Spec` for the resources *charter* -- prior to transformation into resources |
+| formation | `Formation [formation-id mission-id team-constructor-symbol resources-spec-symbol]` |
+| formation id | `FormationId [formation-keyword]` |
+| charter | EDN `#morphics.core/Charter [formation-id resources-charter]` |
+| resources charter | EDN that will be transformed into the team's resources, using the "conforming" support from spec-tools |
 
-A _formation registry_ provides a set of known formations for each mission.
+A _formation registry_ provides a map from formation keyword to formation, plus a set of known formations for each mission.
+
+The transformation from resources charter to resources is responsible for instantiating sub-teams. The resources 
+charter contains a `morphics.core/Charter` everywhere a sub-team should be instantiated in the resources. 
 
 ## Important Morphic Operations
 
