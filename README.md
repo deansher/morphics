@@ -107,12 +107,12 @@ All keywords and symbols are name-spaced.
 
 | Concept | Representation |
 | ------ | ------------ |
-| mission | `spec-tools.spec/Spec` |
+| mission | `clojure.spec.alpha` spec |
 | mission id | mostly fades away, but corresponds in some cases to a spec keyword or a multi-method hierarchy key |
 | team | value that conforms to a mission spec |
 | resources | implicitly embedded in the team |
 | resources spec | implicitly embedded in the mission spec |
-| formation | `spec-tools.spec/Spec` for an arbitrary Clojure value |
+| formation | spec for an arbitrary Clojure value that also conforms to a mission spec |
 | formation id | mostly fades away, but corresponds in some cases to a multi-method hierarchy key |
 | charter | a Clojure value that conforms to a mission spec; represented externally as EDN |
 
