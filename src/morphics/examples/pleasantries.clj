@@ -3,7 +3,7 @@
   (:require
     [clojure.core]
     [clojure.spec.alpha :as s]
-    [morphics.core :as m :refer [o>]]
+    [morphics.core :as m]
     [clojure.set :as set]))
 
 (def party-names
@@ -14,11 +14,11 @@
 
 (s/def ::done boolean?)
 
-;; Expectations typically in [-1.0, 1.0]
+;; Expectations in [-1.0, 1.0] by convention, but other values are ok.
 (s/def ::expectation-greeting double?)
 (s/def ::expectation-tell-me-your-name double?)
 
-;; Emotions typically in [-1.0, 1.0]
+;; Emotions in [-1.0, 1.0] by convention, but other values are ok.
 (s/def ::emotion-happiness double?)
 (s/def ::emotion-belonging double?)
 (s/def ::emotion-irritation double?)
@@ -39,8 +39,8 @@
    ::emotion-happiness             0.0
    ::emotion-belonging             0.0
    ::emotion-irritation            0.0
-   ::emotion-boredom               0.0
-   })
+   ::emotion-boredom               0.0})
+
 
 (s/def ::variable-initial-party-state-fields (s/keys :req [::emotion-happiness
                                                            ::emotion-belonging
@@ -49,21 +49,44 @@
 
 (s/def ::line (s/every party-vocabulary :kind vector?))
 
-(s/def ::get-initial-state (s/fspec :args empty?
-                                    :ret ::party-state))
+(defprotocol Party
+  "represents a party in a chat"
+  (get-initial-state* [party] "return this party's initial state")
+  (hear* [party state line] "while in the given state, hear the line and return an updated state")
+  (speak* [party state] "while in the given state, return a line to speak and a new state, or else nil"))
 
-(s/def ::hear (s/fspec :args (s/cat :state ::party-state
-                                    :line ::line)
-                       :ret ::party-state))
+(s/def ::party #(satisfies? Party %))
 
-(s/def ::speak (s/fspec :args (s/cat :state ::party-state)
-                        :ret (s/nilable (s/cat :line ::line
-                                               :state ::party-state))))
+(defn get-initial-state
+  "Instrumentable wrapper for get-initial-state*"
+  [party]
+  (get-initial-state* party))
 
-(s/def ::party (s/and ::m/team
-                      (s/keys :req [::get-initial-state
-                                    ::hear
-                                    ::speak])))
+(s/fdef get-initial-state
+        :args (s/cat :party ::party)
+        :ret ::party-state)
+
+(defn hear
+  "Instrumentable wrapper for hear*"
+  [party state line]
+  (hear* party state line))
+
+(s/fdef hear
+        :args (s/cat :party ::party
+                     :state ::party-state
+                     :line ::line)
+        :ret ::party-state)
+
+(defn speak
+  "Instrumentable wrapper for speak*"
+  [party state]
+  (speak* party state))
+
+(s/fdef speak
+        :args (s/cat :party ::party
+                     :state ::party-state)
+        :ret (s/nilable (s/cat :line ::line
+                               :state ::party-state)))
 
 (s/def ::party-and-state (s/keys :req [::party ::party-state]))
 
@@ -88,8 +111,8 @@
     (flip-if (not speaker-is-party1)
              [(::emotion-happiness speaking-party-state)
               (::emotion-happiness listening-party-state)])
-    (let [[line speaking-party-state] (o> speaking-party ::speak speaking-party-state)
-          listening-party-state (o> listening-party ::hear listening-party-state line)]
+    (let [[line speaking-party-state] (speak speaking-party speaking-party-state)
+          listening-party-state (hear listening-party listening-party-state line)]
       (recur {::party listening-party ::party-state listening-party-state}
              {::party speaking-party ::party-state speaking-party-state}
              (not speaker-is-party1)
@@ -104,8 +127,8 @@
                     :party2-happiness double?))
 
 (defn score-chat [party1 party2 max-interactions]
-  (score-chat* {::party party1 ::party-state (o> party1 ::get-initial-state)}
-               {::party party2 ::party-state (o> party2 ::get-initial-state)}
+  (score-chat* {::party party1 ::party-state (get-initial-state party1)}
+               {::party party2 ::party-state (get-initial-state party2)}
                true
                max-interactions))
 
@@ -116,55 +139,59 @@
         :ret (s/cat :party1-happiness double?
                     :party2-happiness double?))
 
-(s/def ::listener (s/and ::team
-                         (s/keys :req [::hear])))
+#_(
 
-(s/def ::listeners (s/* ::listener))
+    (s/def ::listener (s/and ::team
+                             (s/keys :req [::hear])))
 
-(s/def ::speaking-impulse (s/fspec :args (s/cat :state ::party-state)
-                                   :ret (s/double-in :min 0.0 :NaN? false)))
+    (s/def ::listeners (s/* ::listener))
 
-(s/def ::speaker (s/and ::team
-                        (s/keys :req [::speaking-impulse
-                                      ::speak])))
+    (s/def ::speaking-impulse (s/fspec :args (s/cat :state ::party-state)
+                                       :ret (s/double-in :min 0.0 :NaN? false)))
 
-(s/def ::speakers (s/* ::speaker))
+    (s/def ::speaker (s/and ::team
+                            (s/keys :req [::speaking-impulse
+                                          ::speak])))
 
-(s/def ::party-formation-1-resources
-  (s/keys :req [::variable-initial-party-state-fields
-                ::listeners
-                ::speakers]))
+    (s/def ::speakers (s/* ::speaker))
 
-(defn- speaker-reduction-step [state]
-  (fn [[highest-impulse highest-impulse-speaker] speaker]
-    (let [new-impulse (o> speaker ::speaking-impulse state)]
-      (if (> new-impulse highest-impulse)
-        [new-impulse speaker]
-        [highest-impulse highest-impulse-speaker]))))
+    (s/def ::party-formation-1-resources
+      (s/keys :req [::variable-initial-party-state-fields
+                    ::listeners
+                    ::speakers]))
 
-(s/fdef speaker-reduction-step
-        :args (s/cat :state ::party-state)
-        :ret (s/fspec :args (s/cat :reduction-state (s/tuple double? ::speaker)
-                                   :speaker ::speaker)
-                      :ret (s/tuple double? ::speaker)))
+    (defn- speaker-reduction-step [state]
+      (fn [[highest-impulse highest-impulse-speaker] speaker]
+        (let [new-impulse (o> speaker ::speaking-impulse state)]
+          (if (> new-impulse highest-impulse)
+            [new-impulse speaker]
+            [highest-impulse highest-impulse-speaker]))))
 
-(m/def-formation
-  [::party-formation-1 ::party ::party-formation-1-resources]
-  ::get-initial-state
-  (fn [res] (merge default-initial-party-state
-                   (::variable-initial-party-state-fields res)))
-  ::hear
-  (fn [res state line] (let [tell-listener
-                             (fn [state listener] (o> listener ::hear state line))]
-                         (reduce tell-listener state (::listeners res))))
-  ::speak
-  (fn [res state] (let [[_ speaker]
-                        (reduce (speaker-reduction-step state)
-                                [Double/NEGATIVE_INFINITY nil]
-                                (::speakers res))]
-                    (when speaker
-                      (o> speaker ::speak state))))
-  )
+    (s/fdef speaker-reduction-step
+            :args (s/cat :state ::party-state)
+            :ret (s/fspec :args (s/cat :reduction-state (s/tuple double? ::speaker)
+                                       :speaker ::speaker)
+                          :ret (s/tuple double? ::speaker)))
+
+    (m/def-formation
+      [::party-formation-1 ::party ::party-formation-1-resources]
+      ::get-initial-state
+      (fn [res] (merge default-initial-party-state
+                       (::variable-initial-party-state-fields res)))
+      ::hear
+      (fn [res state line] (let [tell-listener
+                                 (fn [state listener] (o> listener ::hear state line))]
+                             (reduce tell-listener state (::listeners res))))
+      ::speak
+      (fn [res state] (let [[_ speaker]
+                            (reduce (speaker-reduction-step state)
+                                    [Double/NEGATIVE_INFINITY nil]
+                                    (::speakers res))]
+                        (when speaker
+                          (o> speaker ::speak state)))))
+
+    )
+
 
 
 

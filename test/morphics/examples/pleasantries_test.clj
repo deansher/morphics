@@ -1,10 +1,11 @@
 (ns morphics.examples.pleasantries-test
   (:require [clojure.test :refer :all]
             [com.rpl.specter :refer :all]
-            [morphics.core :as m :refer (o>)]
+            [morphics.core :as m]
             [morphics.examples.pleasantries :as pl]
             [clojure.spec.alpha :as s]
-            [orchestra.spec.test :as orch]))
+            [orchestra.spec.test :as orch])
+  (:import (morphics.examples.pleasantries Party)))
 
 (orch/instrument)
 (s/check-asserts true)
@@ -28,26 +29,34 @@
       (update-state state (::pl/expectation-greeting state))
       (update-state state -0.2))))
 
-(s/def sue-fred-hear ::pl/hear)
-
+(s/fdef sue-fred-hear
+        :args (s/cat :state ::party-state
+                     :line ::line)
+        :ret ::pl/party-state)
 
 ;; Sue always says [:hello].
-(def sue {::pl/get-initial-state (fn [] pl/default-initial-party-state)
-          ::pl/hear              sue-fred-hear
-          ::pl/speak             (fn [state] [[:hello] state])})
+(defrecord Sue []
+  Party
+  (get-initial-state* [_] pl/default-initial-party-state)
+  (hear* [_ state line] (sue-fred-hear state line))
+  (speak* [_ state] [[:hello] state]))
+
+(def sue (->Sue))
 
 (s/def ::anyone-already-spoke boolean?)
 
 ;; Fred is smart enough to say [:hello] if he speaks first, but then always says [:huh].
-(def fred {::pl/get-initial-state (fn [] (assoc pl/default-initial-party-state ::anyone-already-spoke false))
-           ::pl/hear              (fn [state line]
-                                    (assoc (sue-fred-hear state line)
-                                      ::anyone-already-spoke true))
-           ::pl/speak             (fn [state]
-                                    [(if (::anyone-already-spoke state)
-                                       [:huh]
-                                       [:hello])
-                                     (assoc state ::anyone-already-spoke true)])})
+(defrecord Fred []
+  Party
+  (get-initial-state* [_] (assoc pl/default-initial-party-state ::anyone-already-spoke false))
+  (hear* [_ state line] (assoc (sue-fred-hear state line)
+                          ::anyone-already-spoke true))
+  (speak* [_ state] [(if (::anyone-already-spoke state)
+                       [:huh]
+                       [:hello])
+                     (assoc state ::anyone-already-spoke true)]))
+
+(def fred (->Fred))
 
 (defn- approx= [^Double x ^Double y]
   (< (Math/abs ^Double (- x y)) 1e-4))
@@ -71,6 +80,5 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Exercise morphics more thoroughly against the pleasantries framework.
 
-(s/assert ::m/formation (m/get-formation ::pl/party-formation-1))
 
 
