@@ -4,8 +4,7 @@
             [morphics.core :as m]
             [morphics.examples.pleasantries :as pl]
             [clojure.spec.alpha :as s]
-            [orchestra.spec.test :as orch])
-  (:import (morphics.examples.pleasantries Party)))
+            [orchestra.spec.test :as orch]))
 
 (orch/instrument)
 (s/check-asserts true)
@@ -36,7 +35,7 @@
 
 ;; Sue always says [:hello].
 (defrecord Sue []
-  Party
+  pl/Party
   (get-initial-state* [_] pl/default-initial-party-state)
   (hear* [_ state line] (sue-fred-hear state line))
   (speak* [_ state] [[:hello] state]))
@@ -47,7 +46,7 @@
 
 ;; Fred is smart enough to say [:hello] if he speaks first, but then always says [:huh].
 (defrecord Fred []
-  Party
+  pl/Party
   (get-initial-state* [_] (assoc pl/default-initial-party-state ::anyone-already-spoke false))
   (hear* [_ state line] (assoc (sue-fred-hear state line)
                           ::anyone-already-spoke true))
