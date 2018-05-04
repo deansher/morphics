@@ -169,6 +169,17 @@
                      :state ::party-state)
         :ret (s/and double? pos?))
 
+(defn speaker-speak [speaker state]
+  "while in the given state, return a line to speak and a new state, or nil if nothing to say"
+  (speaker-speak* speaker state))
+
+
+(s/fdef speaker-speak
+        :args (s/cat :speaker ::speaker
+                     :state ::party-state)
+        :ret (s/nilable (s/cat :line ::line
+                               :state ::party-state)))
+
 (defn- speaker-reduction-step [state]
   (fn [[highest-impulse highest-impulse-speaker] speaker]
     (let [new-impulse (speaker-impulse speaker state)]
@@ -181,10 +192,6 @@
         :ret (s/fspec :args (s/cat :reduction-state (s/tuple double? ::speaker)
                                    :speaker ::speaker)
                       :ret (s/tuple double? ::speaker)))
-
-(defn speaker-speak [speaker state]
-  "while in the given state, return a line to speak and a new state, or nil if nothing to say"
-  (speaker-speak* speaker state))
 
 (defrecord ListenersAndSpeakers [initial-state-overrides listeners speakers]
   Party
