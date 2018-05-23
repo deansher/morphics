@@ -15,6 +15,9 @@
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" name="Leiningen: clojure-complete:0.2.4" level="project" />
+    <orderEntry type="library" name="Leiningen: com.fasterxml.jackson.core/jackson-annotations:2.9.0" level="project" />
+    <orderEntry type="library" name="Leiningen: com.fasterxml.jackson.core/jackson-core:2.9.5" level="project" />
+    <orderEntry type="library" name="Leiningen: com.fasterxml.jackson.core/jackson-databind:2.9.5" level="project" />
     <orderEntry type="library" name="Leiningen: com.rpl/specter:1.1.0" level="project" />
     <orderEntry type="library" name="Leiningen: metosin/spec-tools:0.6.2-SNAPSHOT" level="project" />
     <orderEntry type="library" name="Leiningen: orchestra:2017.11.12-1" level="project" />

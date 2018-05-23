@@ -7,6 +7,7 @@
             [orchestra.spec.test :as orch]))
 
 (s/check-asserts true)
+(orch/instrument)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; A very simple test case of the pleasantries framework.

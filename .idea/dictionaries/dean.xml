@@ -2,11 +2,16 @@
   <dictionary name="dean">
     <words>
       <w>arohner</w>
+      <w>defclass</w>
+      <w>defconstructor</w>
+      <w>functionize</w>
       <w>instrumentable</w>
       <w>metosin</w>
       <w>morphics</w>
       <w>orch</w>
       <w>setval</w>
+      <w>syms</w>
+      <w>undominated</w>
     </words>
   </dictionary>
 </component>
