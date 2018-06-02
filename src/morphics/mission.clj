@@ -22,7 +22,8 @@
             [clojure.set :as set]
             [clojure.string :as string]
             [clojure.spec.alpha :as s]
-            [clojure.spec.gen.alpha :as gen]))
+            [clojure.spec.gen.alpha :as gen]
+            [orchestra.spec.test :as orch]))
 
 (s/def ::tag (s/with-gen (s/or :ident (s/and ident? namespace)
                                :class (partial instance? Class))
@@ -31,8 +32,10 @@
 ;; Mission tag for values described by a mission.
 (s/def ::for-tag ::tag)
 
-(s/def ::mission (s/and (s/keys :req [::tag ::for-tag])
-                        #(-> % ::tag (= ::mission))))
+(s/def ::mission (s/and #(-> % ::tag (= ::mission))
+                        (s/keys :req [::tag ::for-tag])))
+
+(s/def ::mission-or-tag (s/or ::mission ::tag))
 
 (defprotocol HasMissionTag
   "A Java type that implements a mission tag different than the type.  See `morphics.mission/tag`."
@@ -55,8 +58,8 @@
 ;; of inferring a mission tag.
 (defonce ^:skip-wiki key->preferred-over-keys (atom {}))
 
-;; Given a mission tag, a set of known constructor symbols.
-(defonce ^:skip-wiki tag->constructor-syms (atom {}))
+;; Given a mission tag, a set of known constructor vars.
+(defonce ^:skip-wiki tag->constructor-vars (atom {}))
 
 ;; Given a mission tag, a set of functions from mission to spec.
 (defonce ^:skip-wiki tag->spec-fns (atom {}))
@@ -160,23 +163,71 @@
         :ret ::mission)
 
 (defn add-constructor
-  "Declare that `constructor-sym` is a constructor for the specified mission `tag`."
-  [tag constructor-sym]
+  "Declare that `constructor-var` is a constructor for the specified mission `tag`."
+  [tag constructor-var]
   (setval [ATOM tag NIL->SET NONE-ELEM]
-          constructor-sym
-          tag->constructor-syms))
+          constructor-var
+          tag->constructor-vars))
 
 (s/fdef add-constructor
         :args (s/cat :tag ::tag
-                     :constructor-sym symbol?))
+                     :constructor-var var?))
+
+(defn mission-or-tag->tag
+  "Given a `mission-or-tag`, return the mission tag.
+  `mission-or-tag` must be a mission or a legal mission tag."
+  [mission-or-tag]
+  (cond
+    (s/valid? ::tag mission-or-tag)
+    (do (assert (namespace mission-or-tag))
+        mission-or-tag)
+
+    (isa? (tag mission-or-tag) ::mission)
+    (::for-tag mission-or-tag)
+
+    :otherwise
+    (throw (ex-info "Expected a mission or a mission tag"
+                    {:argument mission-or-tag}))))
+
+(s/fdef mission-or-tag->tag
+        :args (s/cat :mot ::mission-or-tag)
+        :ret ::tag)
+
+(defn tag->mission [mission-or-tag]
+  {::tag     ::mission
+   ::for-tag mission-or-tag})
+
+(s/fdef tag->mission
+        :args (s/cat :tag ::tag)
+        :ret ::mission)
+
+(defn mission-or-tag->mission
+  "Given a `mission-or-tag`, return the mission tag.
+  `mission-or-tag` must be a mission or a legal mission tag."
+  [mission-or-tag]
+  (cond
+    (s/valid? ::tag mission-or-tag)
+    (do (assert (namespace mission-or-tag))
+        (tag->mission mission-or-tag))
+
+    (isa? (tag mission-or-tag) ::mission)
+    mission-or-tag
+
+    :otherwise
+    (throw (ex-info "Expected a mission or a mission tag"
+                    {:argument mission-or-tag}))))
+
+(s/fdef mission-or-tag->mission
+        :args (s/cat :mot ::mission-or-tag)
+        :ret ::mission)
 
 (defmulti implements?
-          "Inexpensive test of whether `x` implements `mission`."
-          (fn [mission _] (::for-tag mission)))
+          "Inexpensive test of whether `x` implements `mission-or-tag`."
+          (fn [mission-or-tag _] (mission-or-tag->tag mission-or-tag)))
 
 (defmethod implements? :default
-  [mission v]
-  (isa? (tag v) (::for-tag mission)))
+  [mission-or-tag x]
+  (isa? (tag x) (mission-or-tag->tag mission-or-tag)))
 
 (defn add-spec-fn
   "For the specified mission `tag`, add a function from mission to spec (see `clojure.spec.alpha`).
@@ -186,28 +237,29 @@
            spec-fn
            tag->spec-fns)))
 
-(defn ^:skip-wiki constructor-sym->fn
+(defn ^:skip-wiki constructor-var->fn
   "Internal: Look up the function associated with `sym`. Throws an exception if none found."
-  [sym]
-  (let [v (find-var sym)]
-    (if-not v
-      (throw (ex-info "constructor symbol does not identify a var" {:symbol sym})))
-    (let [f (deref v)]
-      (if-not (fn? f)
-        (throw (ex-info "value of constructor var is not a function" {:var v :value f})))
-      f)))
+  [cv]
+  (let [f (deref cv)]
+    (if-not (fn? f)
+      (throw (ex-info "value of constructor var is not a function" {:var cv :value f})))
+    f))
+
+(s/fdef constructor-var->fn
+        :args (s/cat :cv var?)
+        :ret fn?)
 
 (defn ^:skip-wiki make-gen-from-constructor
-  "Internal: If possible, make a generator from the specified `constructor-sym`.
+  "Internal: If possible, make a generator from the specified `constructor-var`.
   Otherwise, throw an exception."
-  [constructor-sym]
-  (let [constructor (constructor-sym->fn constructor-sym)
-        spec (s/get-spec constructor-sym)]
+  [constructor-var]
+  (let [constructor (constructor-var->fn constructor-var)
+        spec        (s/get-spec constructor-var)]
     (if-not spec
-      (throw (ex-info "constructor has no spec" {:symbol constructor-sym})))
+      (throw (ex-info "constructor has no spec" {:symbol constructor-var})))
     (let [args-spec (:args spec)]
       (if-not args-spec
-        (throw (ex-info "constructor spec has no args" {:symbol constructor-sym :spec spec})))
+        (throw (ex-info "constructor spec has no args" {:symbol constructor-var :spec spec})))
       (gen/fmap #(apply constructor %) (s/gen args-spec)))))
 
 (defn ^:skip-wiki gens-from-constructors
@@ -217,13 +269,14 @@
   Returns a sequence of constructor symbols."
   [tag]
   (let [tag-and-descendants   (conj (descendants tag) tag)
-        find-constructor-syms (fn [tag]
-                                (select [ATOM tag] tag->constructor-syms))
-        constructor-syms      (mapcat find-constructor-syms tag-and-descendants)]
-    (map make-gen-from-constructor constructor-syms)))
+        find-constructor-vars (fn [tag]
+                                (select [ATOM tag ALL] tag->constructor-vars))
+        constructor-vars      (mapcat find-constructor-vars tag-and-descendants)]
+    (map make-gen-from-constructor constructor-vars)))
 
-(defn mission-specs [mission]
-  (let [spec-fns (select [ATOM (::for-tag mission) ALL] tag->spec-fns)]
+(defn mission-specs [mission-or-tag]
+  (let [spec-fns (select [ATOM (mission-or-tag->tag mission-or-tag) ALL] tag->spec-fns)
+        mission  (mission-or-tag->mission mission-or-tag)]
     (map #(% mission) spec-fns)))
 
 ;; https://stackoverflow.com/questions/9273333/in-clojure-how-to-apply-a-macro-to-a-list
@@ -231,7 +284,7 @@
   `(fn [& args#] (eval (cons '~macro args#))))
 
 (defn implements
-  "Constructs a spec that verifies the behavior specified for `mission`. At minimum,
+  "Constructs a spec that verifies the behavior specified for `mission-or-tag`. At minimum,
   this spec verifies that `morphics.mission/tag` returns a tag that
   `clojure.core/isa?` the one specified by `mission` (as `:morphics.mission/for-tag`).
 
@@ -243,11 +296,11 @@
   that can be generated, then the spec returned from this function will have a generator that
   chooses and executes a constructor. Note: constructors of descendant tags are *not*
   included if `mission`s `for-tag` is a Java class."
-  [mission]
-  (let [expected-tag (::for-tag mission)
-        result       (fn [x] (= expected-tag (tag x)))
+  [mission-or-tag]
+  (let [expected-tag (mission-or-tag->tag mission-or-tag)
+        result       (s/spec (fn [x] (= expected-tag (tag x))))
 
-        specs        (mission-specs mission)
+        specs        (mission-specs expected-tag)
         result       (if (seq specs)
                        (apply (functionize s/and) result specs)
                        result)
@@ -255,13 +308,16 @@
         gens         (gens-from-constructors expected-tag)
         result       (if (seq gens)
                        (s/with-gen result
-                                   (gen/one-of gens))
+                                   #(gen/one-of gens))
                        result)]
     result))
 
 (s/fdef implements
-        :args (s/cat :mission ::mission)
+        :args (s/cat :mission-or-tag ::mission-or-tag)
         :ret (partial satisfies? s/Spec))
+
+(if *assert* (orch/instrument))
+
 
 
 

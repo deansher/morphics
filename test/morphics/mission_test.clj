@@ -1,8 +1,12 @@
 (ns morphics.mission-test
   (:require [clojure.test :refer :all]
             [morphics.mission :as mission]
-            [orchestra.spec.test :as orch])
+            [orchestra.spec.test :as orch]
+            [clojure.spec.alpha :as s]
+            [expound.alpha :as expound])
   (:import (clojure.lang ExceptionInfo)))
+
+(set! s/*explain-out* expound/printer)
 
 (defrecord Foo [])
 
@@ -25,7 +29,7 @@
 
 (mission/def-tag-fn ::tag3 (constantly Runnable))
 
-(deftest class-test
+(deftest tag-test
   (is (= (type (->Foo)) (mission/tag (->Foo))))
   (is (= ::foo-mission (mission/tag (->FooWithMissionTag))))
   (is (= ::red (mission/tag {::tag1 ::red})))
@@ -35,5 +39,25 @@
   (is (thrown-with-msg? ExceptionInfo #"loop"
                         (mission/tag {::tag1 ::red ::tag2 ::blue ::tag3 ::green}))))
 
-(orch/instrument)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Use everyone's favorite example as a test case.
 
+(derive ::rectangle ::shape)
+
+(defn rectangle [width height]
+  {::mission/tag ::rectangle
+   ::width       width
+   ::height      height})
+
+(s/fdef rectangle
+        :args (s/cat :width double?
+                     :height double?)
+        :ret (mission/implements ::rectangle))
+
+(mission/add-constructor ::rectangle #'rectangle)
+
+(defmulti area mission/tag)
+
+(defmethod area ::rectangle [r] (* (::width r) (::height r)))
+
+(orch/instrument)
