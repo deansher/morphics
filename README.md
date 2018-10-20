@@ -1,4 +1,4 @@
-# morphics
+# Morphics (Vaporware)
 
 Morphics is a different approach to constructing software that makes it more malleable and more
 evolvable. A morphic software component is a stateless hierarchy of immutable values, with an
